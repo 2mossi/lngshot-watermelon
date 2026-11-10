@@ -78,11 +78,13 @@
 
     isClicking = isMouseOver;
   });
-  addEventListener("touchstart", (e) => {
+  canvas.addEventListener("touchstart", (e) => {
+    e.preventDefault();
     if (isGameOver) return;
 
     isClicking = true;
-    mousePos = e.touches[0].clientX / parent.style.zoom;
+    const rect = canvas.getBoundingClientRect();
+    mousePos = (e.touches[0].clientX - rect.left) * 480 / rect.width;
   });
 
   addEventListener("mouseup", () => {
@@ -90,7 +92,8 @@
 
     isClicking = false;
   });
-  addEventListener("touchend", () => {
+  canvas.addEventListener("touchend", (e) => {
+    e.preventDefault();
     if (isGameOver) return;
 
     isClicking = false;
@@ -113,17 +116,20 @@
     }
   });
 
+  canvas.addEventListener("touchcancel", () => { isClicking = false; });
+
   addEventListener("mousemove", (e) => {
     if (isGameOver) return;
 
     const rect = canvas.getBoundingClientRect();
     mousePos = e.clientX / parent.style.zoom - rect.left;
   });
-  addEventListener("touchmove", (e) => {
+  canvas.addEventListener("touchmove", (e) => {
+    e.preventDefault();
     if (isGameOver) return;
 
     const rect = canvas.getBoundingClientRect();
-    mousePos = e.touches[0].clientX / parent.style.zoom - rect.left;
+    mousePos = (e.touches[0].clientX - rect.left) * 480 / rect.width;
   });
 
   addEventListener("click", () => {
@@ -278,22 +284,16 @@
   function resize() {
     canvas.height = 720;
     canvas.width = 480;
-
     if (isMobile()) {
-      parent.style.zoom = window.innerWidth / 480;
+      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      parent.style.zoom = Math.min(window.innerWidth / 480, height / 720);
       parent.style.top = "0px";
-
-      floor.style.height = `${
-        (window.innerHeight - canvas.height * parent.style.zoom) /
-        parent.style.zoom
-      }px`;
+      floor.style.height = "0px";
     } else {
       parent.style.zoom = window.innerHeight / 720 / 1.3;
       parent.style.top = `${(canvas.height * parent.style.zoom) / 15}px`;
-
       floor.style.height = "50px";
     }
-
     Render.setPixelRatio(render, parent.style.zoom * 2);
   }
 
@@ -310,7 +310,7 @@
   }
 
   function isMobile() {
-    return window.innerHeight / window.innerWidth >= 1.49;
+    return window.matchMedia("(max-width: 600px), (pointer: coarse) and (max-width: 900px)").matches;
   }
 
   function init() {
